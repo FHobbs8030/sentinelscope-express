@@ -1,3 +1,5 @@
+import apiResponse from "../utils/apiResponse.js";
+
 const mockScans = [
   {
     id: "scan-001",
@@ -26,9 +28,11 @@ const mockScans = [
 ];
 
 export const getScans = (req, res) => {
-  res.status(200).json({
-    success: true,
-    total: mockScans.length,
-    data: mockScans,
-  });
+  res.status(200).json(
+    apiResponse({
+      success: true,
+      total: mockScans.length,
+      data: mockScans,
+    }),
+  );
 };

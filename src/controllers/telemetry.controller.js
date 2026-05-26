@@ -1,3 +1,5 @@
+import apiResponse from "../utils/apiResponse.js";
+
 const telemetryEvents = [
   {
     id: "evt-001",
@@ -23,9 +25,11 @@ const telemetryEvents = [
 ];
 
 export const getTelemetry = (req, res) => {
-  res.status(200).json({
-    success: true,
-    total: telemetryEvents.length,
-    data: telemetryEvents,
-  });
+  res.status(200).json(
+    apiResponse({
+      success: true,
+      total: telemetryEvents.length,
+      data: telemetryEvents,
+    }),
+  );
 };

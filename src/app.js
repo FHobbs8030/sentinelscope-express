@@ -1,14 +1,15 @@
 import express from "express";
-import telemetryRouter from "./routes/telemetry.routes.js";
 import helmet from "helmet";
 import morgan from "morgan";
 
 import corsMiddleware from "./config/cors.js";
+
 import scansRouter from "./routes/scans.routes.js";
+import telemetryRouter from "./routes/telemetry.routes.js";
+import alertsRouter from "./routes/alerts.routes.js";
+import findingsRouter from "./routes/findings.routes.js";
 
 const app = express();
-
-app.use("/api/telemetry", telemetryRouter);
 
 app.use(helmet());
 
@@ -27,5 +28,11 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/scans", scansRouter);
+
+app.use("/api/telemetry", telemetryRouter);
+
+app.use("/api/alerts", alertsRouter);
+
+app.use("/api/findings", findingsRouter);
 
 export default app;
