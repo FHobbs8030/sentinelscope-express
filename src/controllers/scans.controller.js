@@ -1,38 +1,123 @@
+import Scan from "../models/Scan.js";
 import apiResponse from "../utils/apiResponse.js";
 
-const mockScans = [
-  {
-    id: "scan-001",
-    target: "internal-network.local",
-    type: "Full Recon",
-    status: "completed",
-    findings: 12,
-    startedAt: "2026-05-26T09:00:00Z",
-  },
-  {
-    id: "scan-002",
-    target: "dmz-gateway.local",
-    type: "Port Sweep",
-    status: "running",
-    findings: 3,
-    startedAt: "2026-05-26T09:18:00Z",
-  },
-  {
-    id: "scan-003",
-    target: "api.production.local",
-    type: "Vulnerability Assessment",
-    status: "queued",
-    findings: 0,
-    startedAt: "2026-05-26T09:25:00Z",
-  },
-];
+export const getScans = async (req, res, next) => {
+  try {
+    const scans = await Scan.find().sort({ createdAt: -1 });
 
-export const getScans = (req, res) => {
-  res.status(200).json(
-    apiResponse({
-      success: true,
-      total: mockScans.length,
-      data: mockScans,
-    }),
-  );
+    res.status(200).json(
+      apiResponse({
+        success: true,
+        total: scans.length,
+        data: scans,
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createScan = async (req, res, next) => {
+  try {
+    const { name, target, scanType } = req.body;
+
+    const scan = await Scan.create({
+      name,
+      target,
+      scanType,
+      status: "queued",
+    });
+
+    res.status(201).json(
+      apiResponse({
+        success: true,
+        message: "Scan created successfully",
+        data: scan,
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getScanById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const scan = await Scan.findById(id);
+
+    if (!scan) {
+      return res.status(404).json(
+        apiResponse({
+          success: false,
+          message: "Scan not found",
+        }),
+      );
+    }
+
+    res.status(200).json(
+      apiResponse({
+        success: true,
+        data: scan,
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateScan = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const updatedScan = await Scan.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedScan) {
+      return res.status(404).json(
+        apiResponse({
+          success: false,
+          message: "Scan not found",
+        }),
+      );
+    }
+
+    res.status(200).json(
+      apiResponse({
+        success: true,
+        message: "Scan updated successfully",
+        data: updatedScan,
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteScan = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const deletedScan = await Scan.findByIdAndDelete(id);
+
+    if (!deletedScan) {
+      return res.status(404).json(
+        apiResponse({
+          success: false,
+          message: "Scan not found",
+        }),
+      );
+    }
+
+    res.status(200).json(
+      apiResponse({
+        success: true,
+        message: "Scan deleted successfully",
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
 };
