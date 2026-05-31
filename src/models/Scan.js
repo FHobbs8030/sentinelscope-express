@@ -23,7 +23,19 @@ const scanSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["queued", "running", "completed", "failed", "cancelled"],
+      enum: [
+        "queued",
+        "initializing",
+        "recon",
+        "enumeration",
+        "analysis",
+        "exploitation",
+        "reporting",
+        "completed",
+        "failed",
+        "cancelled",
+        "interrupted",
+      ],
       default: "queued",
     },
 
