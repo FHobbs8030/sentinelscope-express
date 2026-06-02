@@ -6,6 +6,7 @@ import corsMiddleware from "./config/cors.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 import scansRouter from "./routes/scans.routes.js";
+import missionsRouter from "./routes/missions.routes.js";
 import telemetryRouter from "./routes/telemetry.routes.js";
 import alertsRouter from "./routes/alerts.routes.js";
 import findingsRouter from "./routes/findings.routes.js";
@@ -29,6 +30,8 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/scans", scansRouter);
+
+app.use("/api/missions", missionsRouter);
 
 app.use("/api/telemetry", telemetryRouter);
 
