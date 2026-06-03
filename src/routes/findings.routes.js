@@ -1,32 +1,20 @@
 import express from "express";
 
-import apiResponse from "../utils/apiResponse.js";
+import {
+  getFindings,
+  createFinding,
+  getFindingById,
+  updateFinding,
+} from "../controllers/findings.controller.js";
 
 const router = express.Router();
 
-router.get("/", (req, res) => {
-  const findings = [
-    {
-      id: "finding-001",
-      severity: "high",
-      title: "Open SSH Port",
-      target: "dmz-gateway.local",
-    },
-    {
-      id: "finding-002",
-      severity: "medium",
-      title: "Outdated TLS Configuration",
-      target: "api.production.local",
-    },
-  ];
+router.get("/", getFindings);
 
-  res.status(200).json(
-    apiResponse({
-      success: true,
-      total: findings.length,
-      data: findings,
-    }),
-  );
-});
+router.post("/", createFinding);
+
+router.get("/:id", getFindingById);
+
+router.patch("/:id", updateFinding);
 
 export default router;
