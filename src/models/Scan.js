@@ -14,6 +14,16 @@ const scanSchema = new mongoose.Schema(
       trim: true,
     },
 
+    missionId: {
+      type: String,
+      default: null,
+    },
+
+    missionMongoId: {
+      type: String,
+      default: null,
+    },
+
     scanType: {
       type: String,
       required: true,

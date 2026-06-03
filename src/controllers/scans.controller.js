@@ -19,13 +19,30 @@ export const getScans = async (req, res, next) => {
 
 export const createScan = async (req, res, next) => {
   try {
-    const { name, target, scanType } = req.body;
+    const {
+      name,
+      target,
+      scanType,
+      missionId,
+      missionMongoId,
+      status,
+      progress,
+      findingsCount,
+      startedAt,
+      completedAt,
+    } = req.body;
 
     const scan = await Scan.create({
       name,
       target,
+      missionId,
+      missionMongoId,
       scanType,
-      status: "queued",
+      status: status ?? "queued",
+      progress: progress ?? 0,
+      findingsCount: findingsCount ?? 0,
+      startedAt: startedAt ?? null,
+      completedAt: completedAt ?? null,
     });
 
     res.status(201).json(
