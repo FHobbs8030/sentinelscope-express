@@ -40,6 +40,16 @@ const missionSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+
+    scanId: {
+      type: String,
+      default: null,
+    },
+
+    scanMongoId: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,
