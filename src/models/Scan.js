@@ -67,6 +67,12 @@ const scanSchema = new mongoose.Schema(
       default: "queued",
     },
 
+    runtimeState: {
+      type: String,
+      enum: ["active", "interrupted", "completed"],
+      default: "active",
+    },
+
     progress: {
       type: Number,
       default: 0,
