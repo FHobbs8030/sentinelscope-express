@@ -1,32 +1,20 @@
 import express from "express";
 
-import apiResponse from "../utils/apiResponse.js";
+import {
+  getAlerts,
+  createAlert,
+  getAlertById,
+  updateAlert,
+} from "../controllers/alerts.controller.js";
 
 const router = express.Router();
 
-router.get("/", (req, res) => {
-  const alerts = [
-    {
-      id: "alert-001",
-      severity: "critical",
-      message: "Potential remote exploit detected",
-      source: "vulnerability-engine",
-    },
-    {
-      id: "alert-002",
-      severity: "warning",
-      message: "Suspicious outbound traffic observed",
-      source: "network-monitor",
-    },
-  ];
+router.get("/", getAlerts);
 
-  res.status(200).json(
-    apiResponse({
-      success: true,
-      total: alerts.length,
-      data: alerts,
-    }),
-  );
-});
+router.post("/", createAlert);
+
+router.get("/:id", getAlertById);
+
+router.patch("/:id", updateAlert);
 
 export default router;
