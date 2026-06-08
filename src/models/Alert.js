@@ -1,5 +1,29 @@
 import mongoose from "mongoose";
 
+const alertTimelineSchema = new mongoose.Schema(
+  {
+    action: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    timestamp: {
+      type: Date,
+      default: Date.now,
+    },
+
+    notes: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
 const alertSchema = new mongoose.Schema(
   {
     title: {
@@ -43,8 +67,37 @@ const alertSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["open", "acknowledged", "resolved"],
+
+      enum: ["open", "acknowledged", "investigating", "resolved", "closed"],
+
       default: "open",
+    },
+
+    acknowledgedAt: {
+      type: Date,
+      default: null,
+    },
+
+    resolvedAt: {
+      type: Date,
+      default: null,
+    },
+
+    closedAt: {
+      type: Date,
+      default: null,
+    },
+
+    timeline: {
+      type: [alertTimelineSchema],
+
+      default: () => [
+        {
+          action: "created",
+          timestamp: new Date(),
+          notes: "Alert created",
+        },
+      ],
     },
   },
   {
