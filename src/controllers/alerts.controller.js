@@ -27,6 +27,30 @@ export const getAlerts = async (req, res, next) => {
 
 export const createAlert = async (req, res, next) => {
   try {
+    const existingAlert = await Alert.findOne({
+      scanId: req.body.scanId,
+
+      missionId: req.body.missionId,
+
+      title: req.body.title,
+
+      target: req.body.target,
+
+      status: {
+        $in: ["open", "acknowledged", "investigating", "resolved"],
+      },
+    });
+
+    if (existingAlert) {
+      return res.status(200).json(
+        apiResponse({
+          success: true,
+          message: "Alert already exists",
+          data: existingAlert,
+        }),
+      );
+    }
+
     const alert = await Alert.create(req.body);
 
     res.status(201).json(
