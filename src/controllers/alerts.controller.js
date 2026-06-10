@@ -146,7 +146,10 @@ export const acknowledgeAlert = async (req, res, next) => {
     }
 
     alert.status = "acknowledged";
-    alert.acknowledgedAt = new Date();
+
+    if (!alert.acknowledgedAt) {
+      alert.acknowledgedAt = new Date();
+    }
 
     alert.timeline.push(
       createTimelineEntry("acknowledged", "Alert acknowledged by operator"),
@@ -192,6 +195,10 @@ export const investigateAlert = async (req, res, next) => {
 
     alert.status = "investigating";
 
+    if (!alert.investigatingAt) {
+      alert.investigatingAt = new Date();
+    }
+
     alert.timeline.push(
       createTimelineEntry("investigating", "Investigation initiated"),
     );
@@ -235,7 +242,10 @@ export const resolveAlert = async (req, res, next) => {
     }
 
     alert.status = "resolved";
-    alert.resolvedAt = new Date();
+
+    if (!alert.resolvedAt) {
+      alert.resolvedAt = new Date();
+    }
 
     alert.timeline.push(createTimelineEntry("resolved", "Alert resolved"));
 
@@ -278,7 +288,10 @@ export const closeAlert = async (req, res, next) => {
     }
 
     alert.status = "closed";
-    alert.closedAt = new Date();
+
+    if (!alert.closedAt) {
+      alert.closedAt = new Date();
+    }
 
     alert.timeline.push(createTimelineEntry("closed", "Alert closed"));
 

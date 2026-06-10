@@ -67,13 +67,49 @@ const alertSchema = new mongoose.Schema(
 
     status: {
       type: String,
-
       enum: ["open", "acknowledged", "investigating", "resolved", "closed"],
-
       default: "open",
     },
 
+    // Phase 3A Intelligence Fields
+
+    evidence: {
+      type: [String],
+      default: [],
+    },
+
+    riskScore: {
+      type: Number,
+      default: 0,
+    },
+
+    affectedAsset: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    recommendedActions: {
+      type: [String],
+      default: [],
+    },
+
+    threatContext: {
+      type: Object,
+      default: {},
+    },
+
+    relatedFindings: {
+      type: [String],
+      default: [],
+    },
+
     acknowledgedAt: {
+      type: Date,
+      default: null,
+    },
+
+    investigatingAt: {
       type: Date,
       default: null,
     },
