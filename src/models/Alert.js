@@ -99,6 +99,18 @@ const alertSchema = new mongoose.Schema(
       default: {},
     },
 
+    threatNarrative: {
+      summary: {
+        type: String,
+        default: "",
+      },
+
+      operatorGuidance: {
+        type: String,
+        default: "",
+      },
+    },
+
     relatedFindings: {
       type: [String],
       default: [],
