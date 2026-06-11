@@ -111,6 +111,35 @@ const alertSchema = new mongoose.Schema(
       },
     },
 
+    businessImpact: {
+      level: {
+        type: String,
+        default: "",
+      },
+
+      summary: {
+        type: String,
+        default: "",
+      },
+    },
+
+    threatActor: {
+      actor: {
+        type: String,
+        default: "Unknown",
+      },
+
+      confidence: {
+        type: String,
+        default: "Low",
+      },
+
+      description: {
+        type: String,
+        default: "",
+      },
+    },
+
     relatedFindings: {
       type: [String],
       default: [],
