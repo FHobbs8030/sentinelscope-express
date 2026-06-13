@@ -140,6 +140,28 @@ const alertSchema = new mongoose.Schema(
       },
     },
 
+    mitreAttack: {
+      tactic: {
+        type: String,
+        default: "",
+      },
+
+      technique: {
+        type: String,
+        default: "",
+      },
+
+      techniqueId: {
+        type: String,
+        default: "",
+      },
+
+      confidence: {
+        type: String,
+        default: "",
+      },
+    },
+
     relatedFindings: {
       type: [String],
       default: [],
