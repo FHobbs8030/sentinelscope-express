@@ -162,6 +162,23 @@ const alertSchema = new mongoose.Schema(
       },
     },
 
+    intelligenceConfidence: {
+      score: {
+        type: Number,
+        default: 0,
+      },
+
+      level: {
+        type: String,
+        default: "",
+      },
+
+      rationale: {
+        type: String,
+        default: "",
+      },
+    },
+
     relatedFindings: {
       type: [String],
       default: [],
