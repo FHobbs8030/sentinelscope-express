@@ -179,6 +179,13 @@ const alertSchema = new mongoose.Schema(
       },
     },
 
+    executiveRisk: {
+  level: String,
+  urgency: String,
+  businessPriority: String,
+  summary: String,
+},
+
     relatedFindings: {
       type: [String],
       default: [],
