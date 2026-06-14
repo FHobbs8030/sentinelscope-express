@@ -180,11 +180,33 @@ const alertSchema = new mongoose.Schema(
     },
 
     executiveRisk: {
-  level: String,
-  urgency: String,
-  businessPriority: String,
-  summary: String,
-},
+      level: String,
+      urgency: String,
+      businessPriority: String,
+      summary: String,
+    },
+
+    decisionIntelligence: {
+      recommendation: {
+        type: String,
+        default: "",
+      },
+
+      justification: {
+        type: String,
+        default: "",
+      },
+
+      priority: {
+        type: String,
+        default: "",
+      },
+
+      escalationRequired: {
+        type: Boolean,
+        default: false,
+      },
+    },
 
     relatedFindings: {
       type: [String],
