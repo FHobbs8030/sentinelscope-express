@@ -208,6 +208,45 @@ const alertSchema = new mongoose.Schema(
       },
     },
 
+    prediction: {
+      predictedNextStage: {
+        type: String,
+        default: "",
+      },
+
+      predictedRiskTrend: {
+        type: String,
+        default: "",
+      },
+
+      estimatedTimeToEscalation: {
+        type: String,
+        default: "",
+      },
+
+      confidence: {
+        score: {
+          type: Number,
+          default: 0,
+        },
+
+        level: {
+          type: String,
+          default: "",
+        },
+      },
+
+      rationale: {
+        type: String,
+        default: "",
+      },
+
+      executiveForecast: {
+        type: String,
+        default: "",
+      },
+    },
+
     relatedFindings: {
       type: [String],
       default: [],
