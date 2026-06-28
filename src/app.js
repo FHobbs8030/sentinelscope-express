@@ -1,8 +1,9 @@
 import express from "express";
 import helmet from "helmet";
+import mongoose from "mongoose";
 import morgan from "morgan";
-import env from "./config/env.js";
 
+import env from "./config/env.js";
 import corsMiddleware from "./config/cors.js";
 import errorHandler from "./middleware/errorHandler.js";
 
@@ -20,14 +21,37 @@ app.use(corsMiddleware);
 
 app.use(express.json());
 
-app.use(morgan("dev"));
+app.use(morgan(env.isProduction ? "combined" : "dev"));
 
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    status: "online",
-    service: "sentinelscope-express",
-    environment: env.nodeEnv,
-  });
+app.get("/api/health", async (req, res) => {
+  const database = mongoose.connection.db;
+
+  if (!database || mongoose.connection.readyState !== 1) {
+    return res.status(503).json({
+      status: "unavailable",
+      service: "sentinelscope-express",
+      environment: env.nodeEnv,
+      database: "disconnected",
+    });
+  }
+
+  try {
+    await database.admin().ping();
+
+    return res.status(200).json({
+      status: "online",
+      service: "sentinelscope-express",
+      environment: env.nodeEnv,
+      database: "connected",
+    });
+  } catch {
+    return res.status(503).json({
+      status: "unavailable",
+      service: "sentinelscope-express",
+      environment: env.nodeEnv,
+      database: "unavailable",
+    });
+  }
 });
 
 app.use("/api/scans", scansRouter);
