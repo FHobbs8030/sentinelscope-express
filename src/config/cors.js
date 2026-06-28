@@ -1,8 +1,19 @@
 import cors from "cors";
+
 import env from "./env.js";
 
 const corsOptions = {
-  origin: env.clientUrl,
+  origin(origin, callback) {
+    if (!origin || env.clientUrls.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    const error = new Error(`CORS blocked request from origin: ${origin}`);
+    error.statusCode = 403;
+
+    callback(error);
+  },
 
   credentials: true,
 

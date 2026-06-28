@@ -1,6 +1,7 @@
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
+import env from "./config/env.js";
 
 import corsMiddleware from "./config/cors.js";
 import errorHandler from "./middleware/errorHandler.js";
@@ -25,7 +26,7 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({
     status: "online",
     service: "sentinelscope-express",
-    environment: "development",
+    environment: env.nodeEnv,
   });
 });
 
