@@ -4,15 +4,17 @@ import env from "./env.js";
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(env.mongoUri);
+    const connection = await mongoose.connect(env.mongoUri);
 
     console.log(`
 =================================
  MongoDB Connected Successfully
 =================================
- Database : sentinelscope
+ Database : ${connection.connection.name}
 =================================
     `);
+
+    return connection;
   } catch (error) {
     console.error(`
 =================================
@@ -22,8 +24,18 @@ const connectDB = async () => {
 =================================
     `);
 
-    process.exit(1);
+    throw error;
   }
+};
+
+export const disconnectDB = async () => {
+  if (mongoose.connection.readyState === 0) {
+    return;
+  }
+
+  await mongoose.disconnect();
+
+  console.log("MongoDB connection closed.");
 };
 
 export default connectDB;
