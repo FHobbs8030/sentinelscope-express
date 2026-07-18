@@ -31,6 +31,18 @@ const scanSchema = new mongoose.Schema(
       default: "recon",
     },
 
+    profile: {
+      type: String,
+      default: "General",
+      trim: true,
+    },
+
+    severity: {
+      type: String,
+      enum: ["low", "medium", "high", "critical"],
+      default: "medium",
+    },
+
     status: {
       type: String,
       enum: [
