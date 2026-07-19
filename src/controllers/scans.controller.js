@@ -20,6 +20,7 @@ export const getScans = async (req, res, next) => {
 export const createScan = async (req, res, next) => {
   try {
     const {
+      clientScanId: rawClientScanId,
       name,
       target,
       scanType,
@@ -36,30 +37,91 @@ export const createScan = async (req, res, next) => {
       completedAt,
     } = req.body;
 
-    const scan = await Scan.create({
-      name,
-      target,
-      missionId,
-      missionMongoId,
-      scanType,
-      profile: profile ?? "General",
-      severity: severity ?? "medium",
-      status: status ?? "queued",
-      currentStage: currentStage ?? status ?? "queued",
-      runtimeState: runtimeState ?? "active",
-      progress: progress ?? 0,
-      findingsCount: findingsCount ?? 0,
-      startedAt: startedAt ?? null,
-      completedAt: completedAt ?? null,
-    });
+    const clientScanId =
+      typeof rawClientScanId === "string"
+        ? rawClientScanId.trim()
+        : null;
 
-    res.status(201).json(
-      apiResponse({
-        success: true,
-        message: "Scan created successfully",
-        data: scan,
-      }),
-    );
+    if (
+      rawClientScanId !== undefined &&
+      (typeof rawClientScanId !== "string" || clientScanId === "")
+    ) {
+      return res.status(400).json(
+        apiResponse({
+          success: false,
+          message: "clientScanId must be a non-empty string",
+        }),
+      );
+    }
+
+    if (clientScanId) {
+      const existingScan = await Scan.findOne({
+        clientScanId,
+      });
+
+      if (existingScan) {
+        return res.status(200).json(
+          apiResponse({
+            success: true,
+            message: "Scan already exists",
+            data: existingScan,
+          }),
+        );
+      }
+    }
+
+    try {
+      const scan = await Scan.create({
+        ...(clientScanId
+          ? {
+              clientScanId,
+            }
+          : {}),
+        name,
+        target,
+        missionId,
+        missionMongoId,
+        scanType,
+        profile: profile ?? "General",
+        severity: severity ?? "medium",
+        status: status ?? "queued",
+        currentStage: currentStage ?? status ?? "queued",
+        runtimeState: runtimeState ?? "active",
+        progress: progress ?? 0,
+        findingsCount: findingsCount ?? 0,
+        startedAt: startedAt ?? null,
+        completedAt: completedAt ?? null,
+      });
+
+      return res.status(201).json(
+        apiResponse({
+          success: true,
+          message: "Scan created successfully",
+          data: scan,
+        }),
+      );
+    } catch (error) {
+      if (
+        clientScanId &&
+        (error?.code === 11000 || error?.code === 11001)
+      ) {
+        const existingScan = await Scan.findOne({
+          clientScanId,
+        });
+
+        if (existingScan) {
+          return res.status(200).json(
+            apiResponse({
+              success: true,
+              message: "Scan already exists",
+              data: existingScan,
+            }),
+          );
+        }
+      }
+
+      throw error;
+    }
   } catch (error) {
     next(error);
   }

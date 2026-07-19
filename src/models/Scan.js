@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const scanSchema = new mongoose.Schema(
   {
+    clientScanId: {
+      type: String,
+      trim: true,
+    },
+
     name: {
       type: String,
       required: true,
@@ -110,6 +115,14 @@ const scanSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+  },
+);
+
+scanSchema.index(
+  { clientScanId: 1 },
+  {
+    unique: true,
+    sparse: true,
   },
 );
 
