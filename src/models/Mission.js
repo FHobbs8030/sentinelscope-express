@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const missionSchema = new mongoose.Schema(
   {
+    clientMissionId: {
+      type: String,
+      trim: true,
+    },
+
     target: {
       type: String,
       required: true,
@@ -53,6 +58,14 @@ const missionSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+  },
+);
+
+missionSchema.index(
+  { clientMissionId: 1 },
+  {
+    unique: true,
+    sparse: true,
   },
 );
 

@@ -21,14 +21,79 @@ export const getMissions = async (req, res, next) => {
 
 export const createMission = async (req, res, next) => {
   try {
-    const mission = await Mission.create(req.body);
+    const rawClientMissionId = req.body?.clientMissionId;
 
-    res.status(201).json(
-      apiResponse({
-        success: true,
-        data: mission,
-      }),
-    );
+    const clientMissionId =
+      typeof rawClientMissionId === "string"
+        ? rawClientMissionId.trim()
+        : null;
+
+    if (
+      rawClientMissionId !== undefined &&
+      (typeof rawClientMissionId !== "string" || clientMissionId === "")
+    ) {
+      return res.status(400).json(
+        apiResponse({
+          success: false,
+          message: "clientMissionId must be a non-empty string",
+        }),
+      );
+    }
+
+    if (clientMissionId) {
+      const existingMission = await Mission.findOne({
+        clientMissionId,
+      });
+
+      if (existingMission) {
+        return res.status(200).json(
+          apiResponse({
+            success: true,
+            message: "Mission already exists",
+            data: existingMission,
+          }),
+        );
+      }
+    }
+
+    try {
+      const mission = await Mission.create({
+        ...req.body,
+        ...(clientMissionId
+          ? {
+              clientMissionId,
+            }
+          : {}),
+      });
+
+      return res.status(201).json(
+        apiResponse({
+          success: true,
+          data: mission,
+        }),
+      );
+    } catch (error) {
+      if (
+        clientMissionId &&
+        (error?.code === 11000 || error?.code === 11001)
+      ) {
+        const existingMission = await Mission.findOne({
+          clientMissionId,
+        });
+
+        if (existingMission) {
+          return res.status(200).json(
+            apiResponse({
+              success: true,
+              message: "Mission already exists",
+              data: existingMission,
+            }),
+          );
+        }
+      }
+
+      throw error;
+    }
   } catch (error) {
     next(error);
   }

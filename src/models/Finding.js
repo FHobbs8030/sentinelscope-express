@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const findingSchema = new mongoose.Schema(
   {
+    clientFindingId: {
+      type: String,
+      trim: true,
+    },
+
     scanId: {
       type: String,
       required: true,
@@ -29,13 +34,7 @@ const findingSchema = new mongoose.Schema(
 
     severity: {
       type: String,
-      enum: [
-        "critical",
-        "high",
-        "medium",
-        "low",
-        "informational",
-      ],
+      enum: ["critical", "high", "medium", "low", "informational"],
       required: true,
     },
 
@@ -51,7 +50,15 @@ const findingSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
+);
+
+findingSchema.index(
+  { clientFindingId: 1 },
+  {
+    unique: true,
+    sparse: true,
+  },
 );
 
 export default mongoose.model(
