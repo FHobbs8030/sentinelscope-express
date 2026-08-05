@@ -22,14 +22,10 @@ app.use(express.json());
 
 app.use(morgan(env.isProduction ? "combined" : "dev"));
 
-app.get("/api/health", (req, res) => {
+app.get("/api/health", (_req, res) => {
   res.status(200).json({
-    success: true,
     status: "online",
-    service: "sentinelscope-express",
-    environment: env.nodeEnv,
-    uptimeSeconds: Math.floor(process.uptime()),
-    timestamp: new Date().toISOString(),
+    service: "SentinelScope Backend",
   });
 });
 
