@@ -1,15 +1,91 @@
 import Finding from "../models/Finding.js";
 import apiResponse from "../utils/apiResponse.js";
 
+const MAX_FINDINGS_PAGE_SIZE = 200;
+const DEFAULT_FINDINGS_PAGE_SIZE = 50;
+
+const parsePositiveInteger = (value) => {
+  if (typeof value !== "string" || !/^\d+$/.test(value)) {
+    return null;
+  }
+
+  const parsedValue = Number.parseInt(value, 10);
+
+  return parsedValue > 0 ? parsedValue : null;
+};
+
 export const getFindings = async (req, res, next) => {
   try {
-    const findings = await Finding.find().sort({ createdAt: -1 });
+    const paginationRequested =
+      req.query.page !== undefined || req.query.limit !== undefined;
 
-    res.status(200).json(
+    if (!paginationRequested) {
+      const findings = await Finding.find()
+        .sort({ createdAt: -1 })
+        .lean();
+
+      return res.status(200).json(
+        apiResponse({
+          success: true,
+          total: findings.length,
+          data: findings,
+        }),
+      );
+    }
+
+    const page =
+      req.query.page === undefined
+        ? 1
+        : parsePositiveInteger(req.query.page);
+
+    const limit =
+      req.query.limit === undefined
+        ? DEFAULT_FINDINGS_PAGE_SIZE
+        : parsePositiveInteger(req.query.limit);
+
+    if (page === null || limit === null) {
+      return res.status(400).json(
+        apiResponse({
+          success: false,
+          message: "Page and limit must be positive integers",
+        }),
+      );
+    }
+
+    if (limit > MAX_FINDINGS_PAGE_SIZE) {
+      return res.status(400).json(
+        apiResponse({
+          success: false,
+          message: `Finding page size cannot exceed ${MAX_FINDINGS_PAGE_SIZE}`,
+        }),
+      );
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [total, findings] = await Promise.all([
+      Finding.countDocuments(),
+      Finding.find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+    ]);
+
+    const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+
+    return res.status(200).json(
       apiResponse({
         success: true,
-        total: findings.length,
+        total,
         data: findings,
+        meta: {
+          page,
+          limit,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1 && totalPages > 0,
+        },
       }),
     );
   } catch (error) {
