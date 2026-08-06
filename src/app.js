@@ -23,6 +23,8 @@ app.use(express.json());
 app.use(morgan(env.isProduction ? "combined" : "dev"));
 
 app.get("/api/health", (_req, res) => {
+  res.set("Cache-Control", "no-store");
+
   res.status(200).json({
     status: "online",
     service: "SentinelScope Backend",
