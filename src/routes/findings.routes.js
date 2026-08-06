@@ -2,6 +2,7 @@ import express from "express";
 
 import {
   getFindings,
+  getFindingsSummary,
   createFinding,
   createFindingsBatch,
   getFindingById,
@@ -11,6 +12,8 @@ import {
 const router = express.Router();
 
 router.get("/", getFindings);
+
+router.get("/summary", getFindingsSummary);
 
 router.post("/", createFinding);
 

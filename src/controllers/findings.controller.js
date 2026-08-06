@@ -15,6 +15,25 @@ const FINDING_SEVERITIES = new Set([
   "informational",
 ]);
 
+const FINDING_EXPOSURE_WEIGHTS = {
+  critical: 10,
+  high: 7,
+  medium: 4,
+  low: 2,
+  informational: 1,
+};
+
+const createEmptySeverityMetrics = () => {
+  return {
+    total: 0,
+    critical: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
+    informational: 0,
+  };
+};
+
 const parsePositiveInteger = (value) => {
   if (typeof value !== "string" || !/^\d+$/.test(value)) {
     return null;
@@ -187,6 +206,113 @@ export const getFindings = async (req, res, next) => {
           totalPages,
           hasNextPage: page < totalPages,
           hasPreviousPage: page > 1 && totalPages > 0,
+        },
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getFindingsSummary = async (req, res, next) => {
+  try {
+    const { filter, error: filterError } = buildFindingsFilter(req.query);
+
+    if (filterError) {
+      return res.status(400).json(
+        apiResponse({
+          success: false,
+          message: filterError,
+        }),
+      );
+    }
+
+    const [summary] = await Finding.aggregate([
+      {
+        $match: filter,
+      },
+      {
+        $facet: {
+          totals: [
+            {
+              $count: "total",
+            },
+          ],
+          severities: [
+            {
+              $group: {
+                _id: "$severity",
+                count: {
+                  $sum: 1,
+                },
+              },
+            },
+          ],
+          statuses: [
+            {
+              $group: {
+                _id: "$status",
+                count: {
+                  $sum: 1,
+                },
+              },
+            },
+          ],
+          targets: [
+            {
+              $group: {
+                _id: "$target",
+              },
+            },
+            {
+              $count: "total",
+            },
+          ],
+        },
+      },
+    ]);
+
+    const total = summary?.totals?.[0]?.total ?? 0;
+    const severityMetrics = createEmptySeverityMetrics();
+
+    severityMetrics.total = total;
+
+    for (const severityEntry of summary?.severities ?? []) {
+      const severity = severityEntry?._id;
+
+      if (Object.hasOwn(severityMetrics, severity)) {
+        severityMetrics[severity] = severityEntry.count;
+      }
+    }
+
+    const statusMetrics = {};
+
+    for (const statusEntry of summary?.statuses ?? []) {
+      const status =
+        typeof statusEntry?._id === "string" && statusEntry._id.trim()
+          ? statusEntry._id
+          : "unknown";
+
+      statusMetrics[status] = statusEntry.count;
+    }
+
+    const findingExposureScore = Object.entries(
+      FINDING_EXPOSURE_WEIGHTS,
+    ).reduce((score, [severity, weight]) => {
+      return score + severityMetrics[severity] * weight;
+    }, 0);
+
+    const uniqueTargets = summary?.targets?.[0]?.total ?? 0;
+
+    return res.status(200).json(
+      apiResponse({
+        success: true,
+        total,
+        data: {
+          severityMetrics,
+          statusMetrics,
+          findingExposureScore,
+          uniqueTargets,
         },
       }),
     );
