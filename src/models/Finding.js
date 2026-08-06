@@ -61,6 +61,23 @@ findingSchema.index(
   },
 );
 
+findingSchema.index({ createdAt: -1 });
+
+findingSchema.index({
+  severity: 1,
+  createdAt: -1,
+});
+
+findingSchema.index({
+  status: 1,
+  createdAt: -1,
+});
+
+findingSchema.index({
+  target: 1,
+  createdAt: -1,
+});
+
 export default mongoose.model(
   "Finding",
   findingSchema
