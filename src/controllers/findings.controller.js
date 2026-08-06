@@ -1,15 +1,319 @@
 import Finding from "../models/Finding.js";
 import apiResponse from "../utils/apiResponse.js";
 
+const MAX_FINDINGS_PAGE_SIZE = 200;
+const DEFAULT_FINDINGS_PAGE_SIZE = 50;
+const MAX_FINDING_SEARCH_LENGTH = 100;
+const MAX_FINDING_TARGET_LENGTH = 255;
+const MAX_FINDING_STATUS_LENGTH = 50;
+
+const FINDING_SEVERITIES = new Set([
+  "critical",
+  "high",
+  "medium",
+  "low",
+  "informational",
+]);
+
+const FINDING_EXPOSURE_WEIGHTS = {
+  critical: 10,
+  high: 7,
+  medium: 4,
+  low: 2,
+  informational: 1,
+};
+
+const createEmptySeverityMetrics = () => {
+  return {
+    total: 0,
+    critical: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
+    informational: 0,
+  };
+};
+
+const parsePositiveInteger = (value) => {
+  if (typeof value !== "string" || !/^\d+$/.test(value)) {
+    return null;
+  }
+
+  const parsedValue = Number.parseInt(value, 10);
+
+  return parsedValue > 0 ? parsedValue : null;
+};
+
+const normalizeQueryValue = (value) => {
+  return typeof value === "string" ? value.trim() : "";
+};
+
+const escapeRegularExpression = (value) => {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+const buildFindingsFilter = (query) => {
+  const severity = normalizeQueryValue(query.severity).toLowerCase();
+  const status = normalizeQueryValue(query.status).toLowerCase();
+  const target = normalizeQueryValue(query.target);
+  const search = normalizeQueryValue(query.search);
+
+  if (severity && !FINDING_SEVERITIES.has(severity)) {
+    return {
+      error:
+        "Severity must be critical, high, medium, low, or informational",
+      filter: null,
+    };
+  }
+
+  if (status.length > MAX_FINDING_STATUS_LENGTH) {
+    return {
+      error: `Status cannot exceed ${MAX_FINDING_STATUS_LENGTH} characters`,
+      filter: null,
+    };
+  }
+
+  if (target.length > MAX_FINDING_TARGET_LENGTH) {
+    return {
+      error: `Target cannot exceed ${MAX_FINDING_TARGET_LENGTH} characters`,
+      filter: null,
+    };
+  }
+
+  if (search.length > MAX_FINDING_SEARCH_LENGTH) {
+    return {
+      error: `Search cannot exceed ${MAX_FINDING_SEARCH_LENGTH} characters`,
+      filter: null,
+    };
+  }
+
+  const filter = {};
+
+  if (severity) {
+    filter.severity = severity;
+  }
+
+  if (status) {
+    filter.status = status;
+  }
+
+  if (target) {
+    filter.target = target;
+  }
+
+  if (search) {
+    const searchExpression = {
+      $regex: escapeRegularExpression(search),
+      $options: "i",
+    };
+
+    filter.$or = [
+      { clientFindingId: searchExpression },
+      { scanId: searchExpression },
+      { missionId: searchExpression },
+      { target: searchExpression },
+      { title: searchExpression },
+      { description: searchExpression },
+      { category: searchExpression },
+    ];
+  }
+
+  return {
+    error: null,
+    filter,
+  };
+};
+
 export const getFindings = async (req, res, next) => {
   try {
-    const findings = await Finding.find().sort({ createdAt: -1 });
+    const { filter, error: filterError } = buildFindingsFilter(req.query);
 
-    res.status(200).json(
+    if (filterError) {
+      return res.status(400).json(
+        apiResponse({
+          success: false,
+          message: filterError,
+        }),
+      );
+    }
+
+    const paginationRequested =
+      req.query.page !== undefined || req.query.limit !== undefined;
+
+    if (!paginationRequested) {
+      const findings = await Finding.find(filter)
+        .sort({ createdAt: -1 })
+        .lean();
+
+      return res.status(200).json(
+        apiResponse({
+          success: true,
+          total: findings.length,
+          data: findings,
+        }),
+      );
+    }
+
+    const page =
+      req.query.page === undefined
+        ? 1
+        : parsePositiveInteger(req.query.page);
+
+    const limit =
+      req.query.limit === undefined
+        ? DEFAULT_FINDINGS_PAGE_SIZE
+        : parsePositiveInteger(req.query.limit);
+
+    if (page === null || limit === null) {
+      return res.status(400).json(
+        apiResponse({
+          success: false,
+          message: "Page and limit must be positive integers",
+        }),
+      );
+    }
+
+    if (limit > MAX_FINDINGS_PAGE_SIZE) {
+      return res.status(400).json(
+        apiResponse({
+          success: false,
+          message: `Finding page size cannot exceed ${MAX_FINDINGS_PAGE_SIZE}`,
+        }),
+      );
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [total, findings] = await Promise.all([
+      Finding.countDocuments(filter),
+      Finding.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+    ]);
+
+    const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+
+    return res.status(200).json(
       apiResponse({
         success: true,
-        total: findings.length,
+        total,
         data: findings,
+        meta: {
+          page,
+          limit,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1 && totalPages > 0,
+        },
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getFindingsSummary = async (req, res, next) => {
+  try {
+    const { filter, error: filterError } = buildFindingsFilter(req.query);
+
+    if (filterError) {
+      return res.status(400).json(
+        apiResponse({
+          success: false,
+          message: filterError,
+        }),
+      );
+    }
+
+    const [summary] = await Finding.aggregate([
+      {
+        $match: filter,
+      },
+      {
+        $facet: {
+          totals: [
+            {
+              $count: "total",
+            },
+          ],
+          severities: [
+            {
+              $group: {
+                _id: "$severity",
+                count: {
+                  $sum: 1,
+                },
+              },
+            },
+          ],
+          statuses: [
+            {
+              $group: {
+                _id: "$status",
+                count: {
+                  $sum: 1,
+                },
+              },
+            },
+          ],
+          targets: [
+            {
+              $group: {
+                _id: "$target",
+              },
+            },
+            {
+              $count: "total",
+            },
+          ],
+        },
+      },
+    ]);
+
+    const total = summary?.totals?.[0]?.total ?? 0;
+    const severityMetrics = createEmptySeverityMetrics();
+
+    severityMetrics.total = total;
+
+    for (const severityEntry of summary?.severities ?? []) {
+      const severity = severityEntry?._id;
+
+      if (Object.hasOwn(severityMetrics, severity)) {
+        severityMetrics[severity] = severityEntry.count;
+      }
+    }
+
+    const statusMetrics = {};
+
+    for (const statusEntry of summary?.statuses ?? []) {
+      const status =
+        typeof statusEntry?._id === "string" && statusEntry._id.trim()
+          ? statusEntry._id
+          : "unknown";
+
+      statusMetrics[status] = statusEntry.count;
+    }
+
+    const findingExposureScore = Object.entries(
+      FINDING_EXPOSURE_WEIGHTS,
+    ).reduce((score, [severity, weight]) => {
+      return score + severityMetrics[severity] * weight;
+    }, 0);
+
+    const uniqueTargets = summary?.targets?.[0]?.total ?? 0;
+
+    return res.status(200).json(
+      apiResponse({
+        success: true,
+        total,
+        data: {
+          severityMetrics,
+          statusMetrics,
+          findingExposureScore,
+          uniqueTargets,
+        },
       }),
     );
   } catch (error) {

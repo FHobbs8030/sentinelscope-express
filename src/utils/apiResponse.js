@@ -4,6 +4,7 @@ const apiResponse = ({
   total = null,
   data = null,
   errors = null,
+  meta = null,
 }) => {
   const response = {
     success,
@@ -25,6 +26,10 @@ const apiResponse = ({
 
   if (errors) {
     response.errors = errors;
+  }
+
+  if (meta && typeof meta === "object") {
+    response.meta = meta;
   }
 
   return response;
