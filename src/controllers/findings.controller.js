@@ -3,6 +3,17 @@ import apiResponse from "../utils/apiResponse.js";
 
 const MAX_FINDINGS_PAGE_SIZE = 200;
 const DEFAULT_FINDINGS_PAGE_SIZE = 50;
+const MAX_FINDING_SEARCH_LENGTH = 100;
+const MAX_FINDING_TARGET_LENGTH = 255;
+const MAX_FINDING_STATUS_LENGTH = 50;
+
+const FINDING_SEVERITIES = new Set([
+  "critical",
+  "high",
+  "medium",
+  "low",
+  "informational",
+]);
 
 const parsePositiveInteger = (value) => {
   if (typeof value !== "string" || !/^\d+$/.test(value)) {
@@ -14,13 +25,104 @@ const parsePositiveInteger = (value) => {
   return parsedValue > 0 ? parsedValue : null;
 };
 
+const normalizeQueryValue = (value) => {
+  return typeof value === "string" ? value.trim() : "";
+};
+
+const escapeRegularExpression = (value) => {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+const buildFindingsFilter = (query) => {
+  const severity = normalizeQueryValue(query.severity).toLowerCase();
+  const status = normalizeQueryValue(query.status).toLowerCase();
+  const target = normalizeQueryValue(query.target);
+  const search = normalizeQueryValue(query.search);
+
+  if (severity && !FINDING_SEVERITIES.has(severity)) {
+    return {
+      error:
+        "Severity must be critical, high, medium, low, or informational",
+      filter: null,
+    };
+  }
+
+  if (status.length > MAX_FINDING_STATUS_LENGTH) {
+    return {
+      error: `Status cannot exceed ${MAX_FINDING_STATUS_LENGTH} characters`,
+      filter: null,
+    };
+  }
+
+  if (target.length > MAX_FINDING_TARGET_LENGTH) {
+    return {
+      error: `Target cannot exceed ${MAX_FINDING_TARGET_LENGTH} characters`,
+      filter: null,
+    };
+  }
+
+  if (search.length > MAX_FINDING_SEARCH_LENGTH) {
+    return {
+      error: `Search cannot exceed ${MAX_FINDING_SEARCH_LENGTH} characters`,
+      filter: null,
+    };
+  }
+
+  const filter = {};
+
+  if (severity) {
+    filter.severity = severity;
+  }
+
+  if (status) {
+    filter.status = status;
+  }
+
+  if (target) {
+    filter.target = target;
+  }
+
+  if (search) {
+    const searchExpression = {
+      $regex: escapeRegularExpression(search),
+      $options: "i",
+    };
+
+    filter.$or = [
+      { clientFindingId: searchExpression },
+      { scanId: searchExpression },
+      { missionId: searchExpression },
+      { target: searchExpression },
+      { title: searchExpression },
+      { description: searchExpression },
+      { category: searchExpression },
+    ];
+  }
+
+  return {
+    error: null,
+    filter,
+  };
+};
+
 export const getFindings = async (req, res, next) => {
   try {
+    const { filter, error: filterError } = buildFindingsFilter(req.query);
+
+    if (filterError) {
+      return res.status(400).json(
+        apiResponse({
+          success: false,
+          message: filterError,
+        }),
+      );
+    }
+
     const paginationRequested =
       req.query.page !== undefined || req.query.limit !== undefined;
 
     if (!paginationRequested) {
-      const findings = await Finding.find()
+      const findings = await Finding.find(filter)
         .sort({ createdAt: -1 })
         .lean();
 
@@ -64,8 +166,8 @@ export const getFindings = async (req, res, next) => {
     const skip = (page - 1) * limit;
 
     const [total, findings] = await Promise.all([
-      Finding.countDocuments(),
-      Finding.find()
+      Finding.countDocuments(filter),
+      Finding.find(filter)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
