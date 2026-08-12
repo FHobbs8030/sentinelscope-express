@@ -55,6 +55,31 @@ const missionSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+
+    queueLease: {
+      type: String,
+      enum: ["active"],
+    },
+
+    claimedAt: {
+      type: Date,
+      default: null,
+    },
+
+    runtimeOwnerId: {
+      type: String,
+      default: null,
+    },
+
+    runtimeLeaseExpiresAt: {
+      type: Date,
+      default: null,
+    },
+
+    runtimeHeartbeatAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -68,6 +93,22 @@ missionSchema.index(
     sparse: true,
   },
 );
+
+missionSchema.index(
+  { queueLease: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      queueLease: "active",
+    },
+  },
+);
+
+missionSchema.index({
+  state: 1,
+  createdAt: 1,
+  _id: 1,
+});
 
 const Mission = mongoose.model("Mission", missionSchema);
 
