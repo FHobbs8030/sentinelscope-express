@@ -65,6 +65,21 @@ const missionSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    runtimeOwnerId: {
+      type: String,
+      default: null,
+    },
+
+    runtimeLeaseExpiresAt: {
+      type: Date,
+      default: null,
+    },
+
+    runtimeHeartbeatAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
